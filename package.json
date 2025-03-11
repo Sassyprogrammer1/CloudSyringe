@@ -1,0 +1,12 @@
+{
+  "name": "aws-sdks-usage-example",
+  "version": "1.0.0",
+  "description": "This repo contains basic code for the idea of how we can decouple our aws powered services from the aws dependencies for more testable and maintainable code",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
