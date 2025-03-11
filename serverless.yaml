@@ -1,0 +1,80 @@
+service: decoupled-example
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stackName: stack-name
+  environment:
+    BUCKET_NAME: ${self:provider.stackName}-bucket-${opt:stage, 'dev'}
+    # Permissions for S3
+    - Effect: Allow
+      Action:
+        - s3:ListBucket
+        - s3:PutObject
+        - s3:GetObject
+        - s3:DeleteObject
+        - s3:GetBucketNotification
+      Resource:
+        - arn:aws:s3:::${self:provider.environment.BUCKET_NAME}/*
+################
+#   RESOURCES  #
+################
+resources:
+  Resources:
+    #########################
+    #      S3 BUCKET        #
+    #########################
+    FileUploadBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.BUCKET_NAME}
+        AccessControl: Private
+    ##########################
+    #     S3 BUCKET POLICY   #
+    ##########################
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref FileUploadBucket
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: lambda.amazonaws.com
+              Action:
+                - s3:PutObject
+              Resource: arn:aws:s3:::${self:provider.environment.BUCKET_NAME}/*
+##################
+#      OUTPUTS   #
+##################
+  Outputs:
+    FileUploadBucketName:
+      Value: !Ref FileUploadBucket
+      Export:
+        Name: FileUploadBucketName
+#############################
+#       LAMBDA FUNCTIONS    #
+#############################
+functions:
+  # Lambda for uploading files to S3
+  uploadToS3:
+    handler: dist/src/handler.fileUploadToS3Handler
+    events:
+      - http:
+          path: /upload
+          method: post
+          cors:
+            origins:
+              - '*'
+            headers:
+              - Authorization
+              - Content-Type
+            allowCredentials: false
+    environment:
+      BUCKET_NAME: ${self:provider.environment.BUCKET_NAME}
+
+
+plugins:
+  - serverless-offline
